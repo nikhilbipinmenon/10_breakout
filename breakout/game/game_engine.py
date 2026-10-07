@@ -15,6 +15,7 @@ from game.ball import Ball
 from game.brick import Brick
 from game.collision import handle_ball_brick_collision
 from game.renderer import WIDTH, HEIGHT
+from game.brick import Brick, NORMAL, STRONG, UNBREAKABLE
 
 BRICK_ROWS = 4
 BRICK_COLS = 8
@@ -36,6 +37,13 @@ class GameEngine:
         self.lives = STARTING_LIVES
         self.game_over = False
 
+    def _brick_kind(self, row, col):
+        if row == 0:
+            return STRONG                                   # top row: strong
+        if row == 2 and col in (0, BRICK_COLS - 1):
+            return UNBREAKABLE                              # two steel bricks at the edges
+        return NORMAL
+
     def _build_bricks(self):
         bricks = []
         total_width = BRICK_COLS * (BRICK_WIDTH + BRICK_GAP) - BRICK_GAP
@@ -44,7 +52,7 @@ class GameEngine:
             for col in range(BRICK_COLS):
                 x = start_x + col * (BRICK_WIDTH + BRICK_GAP)
                 y = BRICK_TOP_MARGIN + row * (BRICK_HEIGHT + BRICK_GAP)
-                bricks.append(Brick(x, y, BRICK_WIDTH, BRICK_HEIGHT))
+                bricks.append(Brick(x, y, BRICK_WIDTH, BRICK_HEIGHT, self._brick_kind(row, col)))
         return bricks
 
     def _reset_ball(self):
@@ -74,8 +82,7 @@ class GameEngine:
 
         for brick in self.bricks:
             if handle_ball_brick_collision(self.ball, brick):
-                brick.hits_remaining -= 1
-                if brick.hits_remaining <= 0:
+                if brick.hit():
                     self.bricks.remove(brick)
                 break
 
@@ -90,10 +97,12 @@ class GameEngine:
     def draw(self, surface, font):
         from game import renderer
         renderer.draw_scene(surface, self.paddle, self.ball, self.bricks)
-        renderer.draw_text(surface, font, f"Bricks left: {len(self.bricks)}", (10, 10))
+
+        remaining = sum(1 for b in self.bricks if b.breakable)
+        renderer.draw_text(surface, font, f"Bricks left: {remaining}", (10, 10))
 
         lives_text = f"Lives: {self.lives}"
-        lives_x = WIDTH - font.size(lives_text)[0] - 10   # right-align with a 10px margin
+        lives_x = WIDTH - font.size(lives_text)[0] - 10
         renderer.draw_text(surface, font, lives_text, (lives_x, 10))
 
         if self.game_over:
