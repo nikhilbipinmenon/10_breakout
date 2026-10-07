@@ -24,6 +24,8 @@ BRICK_HEIGHT = 22
 BRICK_GAP = 6
 BRICK_TOP_MARGIN = 50
 STARTING_LIVES = 3
+BRICK_POINTS = 10
+MAX_MULTIPLIER = 5
 
 
 class GameEngine:
@@ -31,11 +33,14 @@ class GameEngine:
         self.restart()
 
     def restart(self):
+        """Reset everything for a fresh game."""
         self.paddle = Paddle(x=WIDTH / 2, y=HEIGHT - 30)
         self.ball = Ball(x=WIDTH / 2, y=HEIGHT - 50)
         self.bricks = self._build_bricks()
         self.lives = STARTING_LIVES
         self.game_over = False
+        self.score = 0
+        self.multiplier = 1
 
     def _brick_kind(self, row, col):
         if row == 0:
@@ -84,15 +89,17 @@ class GameEngine:
             if handle_ball_brick_collision(self.ball, brick):
                 if brick.hit():
                     self.bricks.remove(brick)
+                    self.score += BRICK_POINTS * self.multiplier   # score at the CURRENT multiplier
+                    self.multiplier = min(MAX_MULTIPLIER, self.multiplier + 1)
                 break
 
         if self.ball.is_below(HEIGHT):
+            self.multiplier = 1                                    # missed: combo is lost
             self.lives -= 1
             if self.lives <= 0:
                 self.game_over = True
             else:
                 self._reset_ball()
-
 
     def draw(self, surface, font):
         from game import renderer
@@ -100,6 +107,10 @@ class GameEngine:
 
         remaining = sum(1 for b in self.bricks if b.breakable)
         renderer.draw_text(surface, font, f"Bricks left: {remaining}", (10, 10))
+
+        score_text = f"Score: {self.score}  x{self.multiplier}"
+        score_x = (WIDTH - font.size(score_text)[0]) // 2           # centered
+        renderer.draw_text(surface, font, score_text, (score_x, 10))
 
         lives_text = f"Lives: {self.lives}"
         lives_x = WIDTH - font.size(lives_text)[0] - 10
