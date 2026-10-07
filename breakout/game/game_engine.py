@@ -56,19 +56,21 @@ class GameEngine:
         pass
 
     def update(self):
-        self.ball.update()
-        self.ball.bounce_off_walls(WIDTH)
+    	self.ball.update()
+    	self.ball.bounce_off_walls(WIDTH)
 
-        if self.ball.get_rect().colliderect(self.paddle.get_rect()) and self.ball.vy > 0:
-            self.ball.bounce_off_paddle(self.paddle.get_rect())
+    	if self.ball.get_rect().colliderect(self.paddle.get_rect()) and self.ball.vy > 0:
+        	self.ball.bounce_off_paddle(self.paddle.get_rect())
 
-        for brick in self.bricks:
-            if handle_ball_brick_collision(self.ball, brick):
-                brick.hits_remaining -= 1   # BUG: tracked, but never actually checked to remove the brick
-                break
+    	for brick in self.bricks:
+        	if handle_ball_brick_collision(self.ball, brick):
+            		brick.hits_remaining -= 1
+            		if brick.hits_remaining <= 0:
+                		self.bricks.remove(brick)   # destroyed: take it off the board
+            		break                           # only one brick per frame
 
-        if self.ball.is_below(HEIGHT):
-            self._reset_ball()
+    	if self.ball.is_below(HEIGHT):
+        	self._reset_ball()
 
     def draw(self, surface, font):
         from game import renderer
